@@ -7,7 +7,8 @@ main() {
     print('Server started on port: ${port}');
     server.listen((HttpRequest request) {
       var resp = JSON.stringify({
-        'Name': 'Eric Taix',
+        'Name': 'Taix',
+        'FirstName': 'Eric',
         'Environment': Platform.environment}
       );
       request.response..headers.set(HttpHeaders.CONTENT_TYPE, 'application/json')
