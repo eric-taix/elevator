@@ -7,8 +7,7 @@ main() {
     print('Server started on port: ${port}');
     server.listen((HttpRequest request) {
       var resp = JSON.stringify({
-        'Dart on Heroku': true,
-        'Buildpack URL': 'https://github.com/igrigorik/heroku-buildpack-dart',
+        'Name': 'Eric Taix',
         'Environment': Platform.environment}
       );
       request.response..headers.set(HttpHeaders.CONTENT_TYPE, 'application/json')
