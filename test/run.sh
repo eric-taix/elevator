@@ -1,1 +1,1 @@
-dart test/alltests.dart
+/app/dart-sdk/bin/dart test/alltests.dart
