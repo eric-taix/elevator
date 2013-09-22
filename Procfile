@@ -1,1 +1,1 @@
-web: /app/dart-sdk/bin/dart ./bin/elevator.dart
+web: /app/dart-sdk/bin/dart ./bin/building.dart
