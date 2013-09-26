@@ -1,14 +1,38 @@
 library elevator;
 
 import 'dart:io';
-import 'dart:collection';
-
 import 'package:route/server.dart';
 
 part 'urls.dart';
 part 'elevator.dart';
 
-Building building = new Building();
+part 'strategies/omnibus_strategy.dart';
+
+part 'strategies/elevator_strategy.dart';
+part 'elevator_command.dart';
+part 'direction.dart';
+
+
+//--------------- Useful functions (some are generic, others not) -----------
+
+/// A generic 'AND' predicate function
+and(Iterable predicates) => (e) => predicates.every((p) => p(e));
+
+/// Is the stop at the current floor ?
+bool needToStop(Stop stop, int floor) => stop.stop == floor;
+
+/// Do we reach the minimum or maximum floor according to our direction ?
+bool needOppositeDirection(ElevatorModel model) => (model.direction == Direction.UP && model.isHeaven) || (model.direction == Direction.DOWN && model.isGround);
+
+/// Is the call at the same floor as the elevator
+callAtFloor(elevator) => (call) => call.atFloor == elevator.floor;
+
+/// Is the call accepted by the elevator
+acceptCall(elevator) => (call) => elevator.acceptCall(call);
+
+//----------------------------------------------------------------------------
+
+Building building = new Building(6);
 
 main() {
   var port = Platform.environment['PORT'] != null ? int.parse(Platform.environment['PORT']) : 8081;
@@ -25,47 +49,22 @@ main() {
   
 }
 
-/**
- * An enumeration for direction (UP or DOWN)
- */
-class Direction {
-  static const UP = const Direction._('UP');
-  static const DOWN = const Direction._('DOWN');
 
-  final String value;
-
-  const Direction._(this.value);
-  
-  /**
-   * Return the opposite direction
-   */
-  Direction not() => this == UP ? DOWN : UP;
-  
-  String toString() => value;
-}
-
-/**
- *  A incoming call
- */
-class Call {
-  int _atFloor;
-  Direction _direction;
-  
-  Call(this._atFloor, this._direction);
-  
-  int get atFloor => _atFloor;
-  Direction get direction => _direction;
-}
 
 /**
  * This class manages incoming calls and dipatches them to the right elevator
  */
 class Building {
   
-  Elevator _elevator = new Elevator();
+  int _maxFloor;
+  Elevator _elevator;
+  
   // Incoming calls
   List<Call> _calls = new List();
   
+  Building(this._maxFloor) {
+    _elevator = new Elevator(this._maxFloor, new LazyOmnibusStrategy());
+  }
   
   /**
    * Write a reponse and close the stream
@@ -80,10 +79,7 @@ class Building {
   callHandler(HttpRequest req) {
     int floor = int.parse(req.uri.queryParameters['atFloor']);
     Direction direction = req.uri.queryParameters['to'] == 'UP' ? Direction.UP : Direction.DOWN;
-    Call incomingCall = new Call(floor, direction);
-    _calls.add(incomingCall);
-    _elevator.call(floor, direction);
-    print('Call at floor ${floor} ${direction} / Elevator: ${_elevator}'); 
+    _calls.add(new Call(floor, direction));
     _writeResponse(req);
   }
   
@@ -97,21 +93,24 @@ class Building {
 
   goHandler(HttpRequest req) {
     int floor = int.parse(req.uri.queryParameters['floorToGo']);
-    _elevator.go(floor);
+    _elevator.goTo(floor);
     print('Go to floor ${floor} received / Elevator: ${_elevator}'); 
     _writeResponse(req);
   }
 
   resetHandler(HttpRequest req) {
     _elevator.reset();
-    print('Reset received  / Elevator: ${_elevator}');
+    print('Reset received: ${req.uri.path}');
     _writeResponse(req);
   }
 
   nextCommandHandler(HttpRequest req) {
-    String command = _elevator.nextCommand();
-    print('Next command returned: ${command} Elevator: ${_elevator}');
-    _writeResponse(req, command);
+    // Get the command and apply it
+    ElevatorCommand command = _elevator.nextCommand();
+    String commandStr = command.apply(_elevator);
+    // Verify if the elevator wants to accept new incoming call which are at the same floor as the elevator
+    _calls.removeWhere(and([acceptCall(_elevator)]));
+    _writeResponse(req, commandStr);
   }
 }
 

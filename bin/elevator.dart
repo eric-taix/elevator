@@ -1,97 +1,63 @@
 part of elevator;
 
-/// An elevator
-class Elevator {
+
+/**
+ * A read-only elevator model
+ */
+class ElevatorModel {
   // Internal floor of the elevator. This attribut can't be changed from outside
   int _floor = 0;
+  // The maximum number of floor
+  int _nbFloor;
+  // Internal state of current direction of the elevator
+  Direction _direction = Direction.UP;
   // Internal state which reprensents if the door is open
   bool _doorOpen = false;
-  // The current direction of the elevator
-  Direction _direction = Direction.UP;
-  // List of stops (up and down directions)
-  Map<Direction, Set<int>> _stops = new Map();
+  
+  ElevatorModel(this._nbFloor);
   
   int get floor => _floor;
+  Direction get direction => _direction;
+  bool get doorOpen => _doorOpen;
   
-  /// Returns the current stops in the current direction
-  Set<int> get currentStops => _stops[_direction];
-  /// Returns the current stops in the current direction
-  Set<int> get oppositeStops => _stops[_direction.not()];
+  // Is the elevator at floor 0 ?
+  bool get isGround => _floor == 0;
+  // Is the elevator at the maximum floor ?
+  bool get isHeaven => _floor == (_nbFloor-1);
   
-  Elevator() {
-    _stops[Direction.UP]= new Set(); 
-    _stops[Direction.DOWN]= new Set(); 
-    reset();
-  }
+}
+
+/**
+ * An elevator
+ */
+class Elevator extends ElevatorModel {
+
+  // The strategy to use when deciding what to do
+  ElevatorStrategy _strategy;
+  
+  Elevator(int maxFloor, this._strategy) : super(maxFloor);
   
   /**
-   * Someone call for the elevator. Add the requested stop according to the direction only
-   * [newFloor] The requested floor
-   * [direction] The requested direction
+   * Someone call for the elevator.
+   * [call] The requested call
    */
-  void call(int newFloor, Direction direction) {
-    go(newFloor);
+  bool acceptCall(Call call) {
+    return _strategy.acceptIncomingCall(this, call);
   }
   
   /**
    *  Add a new stop. A new stop is added according to the current floor and the direction of the elevator
    *  [newFloor] The new floor to stop
    */
-  void go(int newFloor) {
-    if (newFloor < _floor) {
-      _stops[Direction.DOWN].add(newFloor);
-    } else if (newFloor > _floor) {
-      _stops[Direction.UP].add(newFloor);
-    } else {
-      _stops[_direction].add(_floor);
-    }
-  }
-  
-  /**
-   * Returns true if the current floor is the expected floor
-   */
-  bool _expectedFloor(int floor) => floor == _floor;
-  
-  String _openDoor() {
-    _doorOpen = true;
-    return 'OPEN';
-  }
-  
-  String _closeDoor() {
-    _doorOpen = false;
-    return 'CLOSE';
+  void goTo(int newFloor) {
+    _strategy.addOutgoingStop(new Stop(_floor, newFloor, (newFloor > _floor ? Direction.UP : Direction.DOWN)));
   }
   
   /**
    *  Return the next command
    */
-  String nextCommand() {
-    // First do we have some stop at the current floor ?
-    List<int> stops = currentStops.where(_expectedFloor).toList();
-    if (!stops.isEmpty) {
-      currentStops.removeWhere(_expectedFloor);
-      if (!_doorOpen) {
-        return _openDoor();
-      }
-    }
-    // If no stop here, then verify if the door is closed
-    if (_doorOpen) {
-      return _closeDoor();
-    }
-    // If there's more stop in the current direction the continue to move
-    if (!currentStops.isEmpty) {
-      _floor += _direction == Direction.UP ? 1 : -1;
-      return _direction.value;
-    }
-    // Ok no more stop in this direction, try in the opposite direction
-    Direction o = _direction.not();
-    if (!_stops[_direction.not()].isEmpty) {
-      _direction = _direction.not();
-      return nextCommand();
-    }
-    return 'NOTHING';
-  }
-  
+  ElevatorCommand nextCommand() => _strategy.nextCommand(this);
+
   /**
    * Reset every internal states
    */
@@ -99,8 +65,8 @@ class Elevator {
     _floor =0;
     _direction = Direction.UP;
     _doorOpen = false;
-    _stops.forEach((dir, Set set) => set.clear());
+    _strategy.reset();
   }
   
-  String toString() => 'Floor ${_floor}, Direction ${_direction}, CurrentStops ${currentStops}, OppositeStop ${oppositeStops}';
+  String toString() => 'Floor ${_floor}, Direction ${_direction}, Stops:${_strategy}';
 }

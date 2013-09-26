@@ -9,7 +9,23 @@ packages:
     description: logging
     source: hosted
     version: "0.7.1"
+  meta:
+    description: meta
+    source: hosted
+    version: "0.7.1"
+  path:
+    description: path
+    source: hosted
+    version: "0.7.1"
   route:
     description: route
     source: hosted
     version: "0.4.5+1"
+  stack_trace:
+    description: stack_trace
+    source: hosted
+    version: "0.7.1"
+  unittest:
+    description: unittest
+    source: hosted
+    version: "0.7.1"
