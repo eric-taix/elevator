@@ -16,5 +16,10 @@ class Direction {
    */
   Direction not() => this == UP ? DOWN : UP;
   
+  /**
+   * Get the direction as int. Can be used to multiply a diff between two stops to know which one is after the other
+   */
+  int get intValue => this == Direction.UP ? 1 : -1;
+  
   String toString() => value;
 }

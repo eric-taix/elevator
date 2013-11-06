@@ -31,8 +31,8 @@ class OmnibusStrategy extends StupidOmnibusStrategy {
   
   ElevatorCommand nextCommand(ElevatorModel model) {
     // First verify if there's someone here who's waiting
-    if (_stops.any((_) => needToStop(_, model.floor))) {
-      _stops.removeWhere((_) => needToStop(_, model.floor));
+    if (_stops.any(sameFloorAsElevator(model))) {
+      _stops.removeWhere(sameFloorAsElevator(model));
       // And open the door only if it's closed
       if (!model.doorOpen)
         return OPEN_COMMAND;
@@ -42,13 +42,17 @@ class OmnibusStrategy extends StupidOmnibusStrategy {
     if (model.doorOpen) return CLOSE_COMMAND;
     
     // Play the inherited command strategy
-    return super.nextCommand(model);
+    return _defaultCommand(model);
   }
+  
+  ElevatorCommand _defaultCommand(ElevatorModel model) => super.nextCommand(model);
+  
 }
 
 
 /**
  * This strategy is the same as the Omnibus one but reverse direction as soon as possible
+ * and stop when there's nothing to do
  */
 class LazyOmnibusStrategy extends OmnibusStrategy {
   
@@ -56,22 +60,29 @@ class LazyOmnibusStrategy extends OmnibusStrategy {
     if (_stops.isEmpty) {
       return super.acceptIncomingCall(model, call);
     }
+    // Accept only stop in the same direction
     else if (call.direction == _stops.first.direction) {
-
-      int dir = _stops.first.direction == Direction.UP ? 1 : -1;
-      // Get the 'highest' (according to the direction) between existing stops and elevator
-//      Stop newStop = new Stop(model.floor, model.floor, call.direction);
-      Stop max = _stops.reduce((s1,s2) => (s1.stop - s2.stop) * dir > 0 ? s2 : s1);
-      if (_after(model, max.stop, max.direction) && !_after(model, call.atFloor, max.direction)) return false;
-      return super.acceptIncomingCall(model, call);
-//      if ((call.atFloor - max.stop) * dir >= 0) return super.acceptIncomingCall(model, call);
+      // Get the stop which is the more far away
+      Stop max = _stops.reduce((s1,s2) => s1 < s2 ? s1 : s2);
+      // If the elevator is between the max and call then discard it for now
+      if (model.between(max, call)) return false;
+//      if (model.before(call, model.getDire))
+      if (max.before(call, max.direction)) {
+        if (call.after(model, max.direction)) return false;
+      } 
+      else {
+        if ((model.before(max, max.direction) && (model.after(call, max.direction)))) return false;
+      }
     }
     return false;
   }
   
-  bool _after(ElevatorModel model, int floor, Direction direction) {
-    int dir = direction == Direction.UP ? 1 : -1;
-    return (floor - model.floor) * dir >= 0 ? true : false;
+  ElevatorCommand _defaultCommand(ElevatorModel model) {
+    if (_stops.isEmpty) {
+      return NOTHING_COMMAND;
+    }
+    Stop eleStop = new Stop.fromElevator(model);
+    return _stops.reduce((s1, s2) => s1 < s2 ? s1 : s2) < eleStop ? UP_COMMAND : DOWN_COMMAND;
   }
 
 }

@@ -1,7 +1,9 @@
 library elevator;
 
 import 'dart:io';
+import 'dart:async';
 import 'package:route/server.dart';
+import 'package:route/pattern.dart';
 
 part 'urls.dart';
 part 'elevator.dart';
@@ -19,26 +21,27 @@ part 'direction.dart';
 and(Iterable predicates) => (e) => predicates.every((p) => p(e));
 
 /// Is the stop at the current floor ?
-bool needToStop(Stop stop, int floor) => stop.stop == floor;
+bool sameFloor(Floorable floor, int stop) => floor.floor == stop;
+
+/// Is the [GoalFloor] at the same floor as the elevator
+sameFloorAsElevator(elevator) => (Floorable floor) => sameFloor(floor, elevator.floor);
 
 /// Do we reach the minimum or maximum floor according to our direction ?
 bool needOppositeDirection(ElevatorModel model) => (model.direction == Direction.UP && model.isHeaven) || (model.direction == Direction.DOWN && model.isGround);
 
-/// Is the call at the same floor as the elevator
-callAtFloor(elevator) => (call) => call.atFloor == elevator.floor;
-
 /// Is the call accepted by the elevator
-acceptCall(elevator) => (call) => elevator.acceptCall(call);
+acceptCall(elevator) => (Call call) => elevator.acceptCall(call);
 
 //----------------------------------------------------------------------------
 
-Building building = new Building(6);
+Building building = new Building(20);
 
 main() {
   var port = Platform.environment['PORT'] != null ? int.parse(Platform.environment['PORT']) : 8081;
   
   HttpServer.bind('0.0.0.0', port).then(((HttpServer server) {
     var router = new Router(server)
+    ..filter(matchAny(allUrls), log)
     ..serve(resetUrl, method: 'GET').listen(building.resetHandler)
     ..serve(nextCommandUrl, method: 'GET').listen(building.nextCommandHandler)
     ..serve(goUrl, method: 'GET').listen(building.goHandler)
@@ -49,6 +52,10 @@ main() {
   
 }
 
+Future<bool> log(HttpRequest req) {
+  print("${req.uri.path}/${req.uri.query}");
+  return new Future.value(true);
+}
 
 
 /**
@@ -63,7 +70,7 @@ class Building {
   List<Call> _calls = new List();
   
   Building(this._maxFloor) {
-    _elevator = new Elevator(this._maxFloor, new LazyOmnibusStrategy());
+    _elevator = new Elevator(this._maxFloor, new OmnibusStrategy());
   }
   
   /**
@@ -105,11 +112,13 @@ class Building {
   }
 
   nextCommandHandler(HttpRequest req) {
+    // Verify if the elevator wants to accept new incoming call which are at the same floor as the elevator
+    _calls.removeWhere(acceptCall(_elevator));
     // Get the command and apply it
     ElevatorCommand command = _elevator.nextCommand();
     String commandStr = command.apply(_elevator);
-    // Verify if the elevator wants to accept new incoming call which are at the same floor as the elevator
-    _calls.removeWhere(and([acceptCall(_elevator)]));
+    print("=> ${commandStr}");
+
     _writeResponse(req, commandStr);
   }
 }

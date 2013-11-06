@@ -4,7 +4,7 @@ part of elevator;
 /**
  * A read-only elevator model
  */
-class ElevatorModel {
+class ElevatorModel extends Floorable {
   // Internal floor of the elevator. This attribut can't be changed from outside
   int _floor = 0;
   // The maximum number of floor

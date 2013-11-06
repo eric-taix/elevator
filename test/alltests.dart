@@ -6,7 +6,19 @@ main() {
   useVMConfiguration();
   
   Elevator ele = new Elevator(5, new LazyOmnibusStrategy());
+  //---- Test object features
+  group('Object /', () {
+    test('Stop comparaison', () {
+      Stop s1 = new Stop(1,1,Direction.UP);
+      Stop s2 = new Stop(1,2,Direction.UP);
+      expect(s2 > s1, isTrue);
+      Stop s3 = new Stop(1,3,Direction.DOWN);
+      Stop s4 = new Stop(1,4,Direction.DOWN);
+      expect(s3 > s4, isTrue);
+    });
+  });
   
+  //---- Test internal commands
   group('Command /', () {
     test('Reset', () {
       ele.reset();
@@ -60,22 +72,24 @@ main() {
       expect(ele.floor, equals(0));
     });
   });
+  
+  //---- Test incoming calls
   group('Call /', () {
     test('Accept to up', () {
       ele.reset();
       expect(ele.acceptCall(new Call(2, Direction.UP)), isTrue);
-      expect(ele.acceptCall(new Call(1, Direction.UP)), isTrue);
+      expect(ele.acceptCall(new Call(1, Direction.UP)), isFalse);
       ele.reset();
       expect(ele.acceptCall(new Call(1, Direction.UP)), isTrue);
-      expect(ele.acceptCall(new Call(2, Direction.UP)), isTrue);
-      ele.reset();
-      UP_COMMAND.apply(ele);
-      expect(ele.acceptCall(new Call(0, Direction.UP)), isTrue);
       expect(ele.acceptCall(new Call(2, Direction.UP)), isTrue);
       ele.reset();
       UP_COMMAND.apply(ele);
       expect(ele.acceptCall(new Call(2, Direction.UP)), isTrue);
       expect(ele.acceptCall(new Call(0, Direction.UP)), isFalse);
+      ele.reset();
+      UP_COMMAND.apply(ele);
+      expect(ele.acceptCall(new Call(0, Direction.UP)), isTrue);
+      expect(ele.acceptCall(new Call(2, Direction.UP)), isFalse);
       ele.reset();
       UP_COMMAND.apply(ele);
       UP_COMMAND.apply(ele);
@@ -90,7 +104,7 @@ main() {
     test('Accept to down', () {
       ele.reset();
       expect(ele.acceptCall(new Call(2, Direction.DOWN)), isTrue);
-      expect(ele.acceptCall(new Call(1, Direction.DOWN)), isTrue);
+      expect(ele.acceptCall(new Call(1, Direction.DOWN)), isFalse);
       ele.reset();
       expect(ele.acceptCall(new Call(1, Direction.DOWN)), isTrue);
       expect(ele.acceptCall(new Call(2, Direction.DOWN)), isTrue);
@@ -113,11 +127,18 @@ main() {
       expect(ele.acceptCall(new Call(1, Direction.DOWN)), isTrue);
       expect(ele.acceptCall(new Call(0, Direction.DOWN)), isTrue);
     });
-
   });
-
   
-  
-    
-
+  //---- Test commands
+  group('Command /', () {
+    test('Wait (be patient)', () {
+      ele.reset();
+      expect(ele.nextCommand().apply(ele), equals("NOTHING"));
+    });
+    test('Take upper', () {
+      ele.reset();
+      ele.acceptCall(new Call(1, Direction.DOWN));
+      expect(ele.nextCommand().apply(ele), equals("UP"));
+    });
+  });
 }
