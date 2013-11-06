@@ -2,9 +2,11 @@ library elevator;
 
 import 'dart:io';
 import 'dart:async';
+import 'dart:collection';
 import 'package:route/server.dart';
 import 'package:route/pattern.dart';
 
+part 'command_stack.dart';
 part 'urls.dart';
 part 'elevator.dart';
 
@@ -34,6 +36,8 @@ acceptCall(elevator) => (Call call) => elevator.acceptCall(call);
 
 //----------------------------------------------------------------------------
 
+CommandStack _lastCommands = new CommandStack(500);
+
 Building building = new Building(20);
 
 main() {
@@ -47,7 +51,8 @@ main() {
     ..serve(goUrl, method: 'GET').listen(building.goHandler)
     ..serve(userHasEnteredUrl, method: 'GET').listen(building.userHasEntered)
     ..serve(userHasExitedUrl, method: 'GET').listen(building.userHasExited)
-    ..serve(callUrl, method: 'GET').listen(building.callHandler);
+    ..serve(callUrl, method: 'GET').listen(building.callHandler)
+    ..serve(lastResetUrl, method: 'GET').listen(building.lastResetHandler);
   }));
   
 }
@@ -87,27 +92,36 @@ class Building {
     int floor = int.parse(req.uri.queryParameters['atFloor']);
     Direction direction = req.uri.queryParameters['to'] == 'UP' ? Direction.UP : Direction.DOWN;
     _calls.add(new Call(floor, direction));
+    _lastCommands.add("Call at floor ${floor} direction ${direction}");
     _writeResponse(req);
   }
   
+  lastResetHandler(HttpRequest req) {
+    String cmds = _lastCommands.toString();
+    _writeResponse(req, cmds);
+  }
+  
   userHasExited(HttpRequest req) {
+    _lastCommands.add("User has exited");
     _writeResponse(req);
   }
 
   userHasEntered(HttpRequest req) {
+    _lastCommands.add("User has entered");
     _writeResponse(req);
   }
 
   goHandler(HttpRequest req) {
     int floor = int.parse(req.uri.queryParameters['floorToGo']);
     _elevator.goTo(floor);
-    print('Go to floor ${floor} received / Elevator: ${_elevator}'); 
+    _lastCommands.add('Go to floor ${floor} received / Elevator: ${_elevator}'); 
     _writeResponse(req);
   }
-
+  
   resetHandler(HttpRequest req) {
     _elevator.reset();
-    print('Reset received: ${req.uri.path}');
+    _lastCommands.add('Reset received: ${req.uri.query}');
+    _lastCommands.addStackShot(5);
     _writeResponse(req);
   }
 
@@ -117,7 +131,7 @@ class Building {
     // Get the command and apply it
     ElevatorCommand command = _elevator.nextCommand();
     String commandStr = command.apply(_elevator);
-    print("=> ${commandStr}");
+    _lastCommands.add("===> ${commandStr} elevator at floor ${_elevator.floor}, direction ${_elevator.direction}");
 
     _writeResponse(req, commandStr);
   }
