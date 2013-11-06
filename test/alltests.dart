@@ -3,6 +3,9 @@ import '../bin/building.dart';
 import 'package:unittest/vm_config.dart';
 
 main() {
+}
+
+foo() {
   useVMConfiguration();
   
   Elevator ele = new Elevator(5, new LazyOmnibusStrategy());
