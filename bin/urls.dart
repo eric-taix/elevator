@@ -8,5 +8,5 @@ final resetUrl = new UrlPattern(r'/reset');
 final nextCommandUrl = new UrlPattern(r'/nextCommand');
 final lastResetUrl = new UrlPattern(r'/stacktrace');
 
-final allUrls = [callUrl, goUrl, userHasEnteredUrl, userHasExitedUrl, resetUrl, nextCommandUrl];
+final allUrls = [callUrl, goUrl, userHasEnteredUrl, userHasExitedUrl, resetUrl, nextCommandUrl, lastResetUrl];
 
