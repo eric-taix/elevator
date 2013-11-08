@@ -58,7 +58,7 @@ main() {
 }
 
 Future<bool> log(HttpRequest req) {
-  print("${req.uri.path}/${req.uri.query}");
+  _stack.add("!!! Filtered request: ${req.uri.path}/${req.uri.query} !!!");
   return new Future.value(true);
 }
 
