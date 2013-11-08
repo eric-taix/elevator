@@ -45,7 +45,7 @@ main() {
   
   HttpServer.bind('0.0.0.0', port).then(((HttpServer server) {
     var router = new Router(server)
-    ..filter(matchAny(allUrls), log)
+    ..filter(matchAny(allUrls), building.log)
     ..serve(resetUrl, method: 'GET').listen(building.resetHandler)
     ..serve(nextCommandUrl, method: 'GET').listen(building.nextCommandHandler)
     ..serve(goUrl, method: 'GET').listen(building.goHandler)
@@ -57,10 +57,6 @@ main() {
   
 }
 
-Future<bool> log(HttpRequest req) {
-  _stack.add("!!! Filtered request: ${req.uri.path}/${req.uri.query} !!!");
-  return new Future.value(true);
-}
 
 
 /**
@@ -70,6 +66,7 @@ class Building {
   
   int _maxFloor;
   Elevator _elevator;
+  var start;
   
   // Incoming calls
   List<Call> _calls = new List();
@@ -85,6 +82,12 @@ class Building {
     req.response..writeln(response)..close();
   }
   
+  Future<bool> log(HttpRequest req) {
+    start = new DateTime.now();
+    return new Future.value(true);
+  }
+
+  
   ///
   /// A new incoming call
   /// 
@@ -92,8 +95,8 @@ class Building {
     int floor = int.parse(req.uri.queryParameters['atFloor']);
     Direction direction = req.uri.queryParameters['to'] == 'UP' ? Direction.UP : Direction.DOWN;
     _calls.add(new Call(floor, direction));
-    _stack.add("Call at floor ${floor} direction ${direction}");
     _writeResponse(req);
+    _stack.add("(${new DateTime.now().difference(start).inMilliseconds}ms) Call at floor ${floor} direction ${direction}");
   }
   
   lastResetHandler(HttpRequest req) {
@@ -104,29 +107,30 @@ class Building {
   userHasExited(HttpRequest req) {
     _stack.add("User has exited");
     _writeResponse(req);
+    _stack.add("(${new DateTime.now().difference(start).inMilliseconds}ms) User has exited");
   }
 
   userHasEntered(HttpRequest req) {
     _stack.add("User has entered");
     _writeResponse(req);
+    _stack.add("(${new DateTime.now().difference(start).inMilliseconds}ms) User has entered");
   }
 
   goHandler(HttpRequest req) {
     int floor = int.parse(req.uri.queryParameters['floorToGo']);
     _elevator.goTo(floor);
-    _stack.add('Go to floor ${floor} received / Elevator: ${_elevator}'); 
     _writeResponse(req);
+    _stack.add('(${new DateTime.now().difference(start).inMilliseconds}ms) Go to floor ${floor} received / Elevator: ${_elevator}'); 
   }
   
   resetHandler(HttpRequest req) {
     _elevator.reset();
-    _stack.add('Reset received: ${req.uri.query}');
     _stack.addStackShot(5);
     _writeResponse(req);
+    _stack.add('(${new DateTime.now().difference(start).inMilliseconds}ms) Reset received: ${req.uri.query}');
   }
 
   nextCommandHandler(HttpRequest req) {
-    var start = new DateTime.now();
     // Verify if the elevator wants to accept new incoming call which are at the same floor as the elevator
     _calls.removeWhere(acceptCall(_elevator));
     // Get the command and apply it
