@@ -5,7 +5,7 @@ class CommandStack {
   Queue<String> _stack = new Queue();
   int _maxSize;
   int _idx = 1;
-  List<List<String>> _shots = new List();
+  Queue<List<String>> _shots = new Queue();
   
   CommandStack(this._maxSize);
   
@@ -19,7 +19,10 @@ class CommandStack {
   void addStackShot(int nbMsg) {
     List<String> shot = new List();
     shot.addAll(_stack.skip(_stack.length > nbMsg ? _stack.length - nbMsg : _stack.length));
-    _shots.add(shot);
+    _shots.addLast(shot);
+    if (_shots.length > 20) {
+      _shots.removeFirst();
+    }
   }
   
   String toString() {

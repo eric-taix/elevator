@@ -36,7 +36,7 @@ acceptCall(elevator) => (Call call) => elevator.acceptCall(call);
 
 //----------------------------------------------------------------------------
 
-CommandStack _lastCommands = new CommandStack(500);
+CommandStack _stack = new CommandStack(500);
 
 Building building = new Building(20);
 
@@ -92,48 +92,48 @@ class Building {
     int floor = int.parse(req.uri.queryParameters['atFloor']);
     Direction direction = req.uri.queryParameters['to'] == 'UP' ? Direction.UP : Direction.DOWN;
     _calls.add(new Call(floor, direction));
-    _lastCommands.add("Call at floor ${floor} direction ${direction}");
+    _stack.add("Call at floor ${floor} direction ${direction}");
     _writeResponse(req);
   }
   
   lastResetHandler(HttpRequest req) {
-    String cmds = _lastCommands.toString();
+    String cmds = _stack.toString();
     _writeResponse(req, cmds);
   }
   
   userHasExited(HttpRequest req) {
-    _lastCommands.add("User has exited");
+    _stack.add("User has exited");
     _writeResponse(req);
   }
 
   userHasEntered(HttpRequest req) {
-    _lastCommands.add("User has entered");
+    _stack.add("User has entered");
     _writeResponse(req);
   }
 
   goHandler(HttpRequest req) {
     int floor = int.parse(req.uri.queryParameters['floorToGo']);
     _elevator.goTo(floor);
-    _lastCommands.add('Go to floor ${floor} received / Elevator: ${_elevator}'); 
+    _stack.add('Go to floor ${floor} received / Elevator: ${_elevator}'); 
     _writeResponse(req);
   }
   
   resetHandler(HttpRequest req) {
     _elevator.reset();
-    _lastCommands.add('Reset received: ${req.uri.query}');
-    _lastCommands.addStackShot(5);
+    _stack.add('Reset received: ${req.uri.query}');
+    _stack.addStackShot(5);
     _writeResponse(req);
   }
 
   nextCommandHandler(HttpRequest req) {
+    var start = new DateTime.now();
     // Verify if the elevator wants to accept new incoming call which are at the same floor as the elevator
     _calls.removeWhere(acceptCall(_elevator));
     // Get the command and apply it
     ElevatorCommand command = _elevator.nextCommand();
     String commandStr = command.apply(_elevator);
-    _lastCommands.add("===> ${commandStr} elevator at floor ${_elevator.floor}, direction ${_elevator.direction}");
-
     _writeResponse(req, commandStr);
+    _stack.add("(${new DateTime.now().difference(start).inMilliseconds}ms) ===> ${commandStr} elevator at floor ${_elevator.floor}, direction ${_elevator.direction}");
   }
 }
 

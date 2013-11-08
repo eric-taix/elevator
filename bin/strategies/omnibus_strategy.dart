@@ -20,7 +20,10 @@ class StupidOmnibusStrategy implements ElevatorStrategy {
   }
   void reset() => _stops.clear();
   
-  ElevatorCommand nextCommand(ElevatorModel model) => needOppositeDirection(model) ? new ElevatorCommand.fromDirection(model.direction.not()) : new ElevatorCommand.fromDirection(model.direction);
+  ElevatorCommand nextCommand(ElevatorModel model) {
+    _stack.add("Elevator dir:${model.direction} floor:${model.floor} isHeaven:${model.isHeaven} isGround:${model.isGround}");
+    return needOppositeDirection(model) ? new ElevatorCommand.fromDirection(model.direction.not()) : new ElevatorCommand.fromDirection(model.direction);
+  }
 }
 
 
