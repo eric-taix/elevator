@@ -68,10 +68,9 @@ class LazyOmnibusStrategy extends OmnibusStrategy {
       // Get the stop which is the more far away
       Stop max = _stops.reduce((s1,s2) => s1 < s2 ? s1 : s2);
       // If the elevator is between the max and call then discard it for now
-      if (call.between(model, _stops.first)) {
-        return super.acceptIncomingCall(model, call);
-      }
-      return false;
+      if (model.between(call, max)) return false;
+      // Else take this incoming call into account
+      return super.acceptIncomingCall(model, call);
     }
     return false;
   }
@@ -81,7 +80,8 @@ class LazyOmnibusStrategy extends OmnibusStrategy {
       return NOTHING_COMMAND;
     }
     Stop eleStop = new Stop.fromElevator(model);
-    return _stops.reduce((s1, s2) => s1 < s2 ? s1 : s2) < eleStop ? UP_COMMAND : DOWN_COMMAND;
+    Stop stop = _stops.reduce((s1, s2) => s1 < s2 ? s1 : s2);
+    return  stop.floor > eleStop.floor ? UP_COMMAND : DOWN_COMMAND;
   }
 
 }

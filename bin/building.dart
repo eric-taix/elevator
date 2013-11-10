@@ -72,7 +72,7 @@ class Building {
   List<Call> _calls = new List();
   
   Building(this._maxFloor) {
-    _elevator = new Elevator(this._maxFloor, new OmnibusStrategy());
+    _elevator = new Elevator(this._maxFloor, new LazyOmnibusStrategy());
   }
   
   /**

@@ -10,7 +10,9 @@ class CommandStack {
   CommandStack(this._maxSize);
   
   void add(String value) {
-    _stack.addLast("${_idx++}: ${value}");
+    String val = "${_idx++}: ${value}";
+    print(val);
+    _stack.addLast(val);
     if (_stack.length > _maxSize) {
       _stack.removeFirst();
     }
