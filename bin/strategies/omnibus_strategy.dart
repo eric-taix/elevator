@@ -18,7 +18,7 @@ class StupidOmnibusStrategy implements ElevatorStrategy {
     _stops.add(new Stop.fromCall(call));
     return true;
   }
-  void reset() => _stops.clear();
+  void reset() {} //_stops.clear();
   
   ElevatorCommand nextCommand(ElevatorModel model) {
     _stack.add("Elevator dir:${model.direction} floor:${model.floor} isHeaven:${model.isHeaven} isGround:${model.isGround}");
@@ -68,14 +68,10 @@ class LazyOmnibusStrategy extends OmnibusStrategy {
       // Get the stop which is the more far away
       Stop max = _stops.reduce((s1,s2) => s1 < s2 ? s1 : s2);
       // If the elevator is between the max and call then discard it for now
-      if (model.between(max, call)) return false;
-//      if (model.before(call, model.getDire))
-      if (max.before(call, max.direction)) {
-        if (call.after(model, max.direction)) return false;
-      } 
-      else {
-        if ((model.before(max, max.direction) && (model.after(call, max.direction)))) return false;
+      if (call.between(model, _stops.first)) {
+        return super.acceptIncomingCall(model, call);
       }
+      return false;
     }
     return false;
   }
