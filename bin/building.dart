@@ -38,7 +38,7 @@ acceptCall(elevator) => (Call call) => elevator.acceptCall(call);
 
 CommandStack _stack = new CommandStack(500);
 
-Building building = new Building(6);
+Building building = new Building(20);
 
 main() {
   var port = Platform.environment['PORT'] != null ? int.parse(Platform.environment['PORT']) : 8081;
@@ -72,7 +72,7 @@ class Building {
   List<Call> _calls = new List();
   
   Building(this._maxFloor) {
-    _elevator = new Elevator(this._maxFloor, new LazyOmnibusStrategy());
+    _elevator = new Elevator(this._maxFloor, new OmnibusStrategy());
   }
   
   /**
